@@ -69,27 +69,30 @@ HANDLE findRawInputDevice()
         DEBUG(L"pRawInputDeviceList malloc failed");
         return nullptr;
     }
-    if (GetRawInputDeviceList(pRawInputDeviceList, &nDevices, sizeof(RAWINPUTDEVICELIST)) == -1) {
-        DEBUG(L"GetRawInputDeviceList failed");
-        return nullptr;
-    }
     HANDLE touchpad = nullptr;
-    for (UINT i = 0; i < nDevices; ++i) {
-        const RAWINPUTDEVICELIST &device = pRawInputDeviceList[i];
-        if (device.dwType == RIM_TYPEMOUSE) {
-            UINT nameSize;
-            GetRawInputDeviceInfo(device.hDevice, RIDI_DEVICENAME, nullptr, &nameSize);
-            if (nameSize) {
-                TCHAR *name = new TCHAR[nameSize + 1];
-                if (GetRawInputDeviceInfo(device.hDevice, RIDI_DEVICENAME, name, &nameSize) != (UINT)-1) {
-                    if (wcscmp(name, TOUCHPAD) == 0) {
-                        DEBUG(L"Raw device: %s hDevice: %p", name, device.hDevice);
-                        touchpad = device.hDevice;
+    if (GetRawInputDeviceList(pRawInputDeviceList, &nDevices, sizeof(RAWINPUTDEVICELIST)) != -1) {
+        for (UINT i = 0; i < nDevices; ++i) {
+            const RAWINPUTDEVICELIST &device = pRawInputDeviceList[i];
+            if (device.dwType == RIM_TYPEMOUSE) {
+                UINT nameSize;
+                GetRawInputDeviceInfo(device.hDevice, RIDI_DEVICENAME, nullptr, &nameSize);
+                if (nameSize) {
+                    TCHAR *name = new TCHAR[nameSize + 1];
+                    if (GetRawInputDeviceInfo(device.hDevice, RIDI_DEVICENAME, name, &nameSize) != (UINT)-1) {
+                        if (wcscmp(name, TOUCHPAD) == 0) {
+                            DEBUG(L"Raw device: %s hDevice: %p", name, device.hDevice);
+                            touchpad = device.hDevice;
+                        }
+                    }
+                    delete[] name;
+                    if (touchpad) {
+                        break;
                     }
                 }
-                delete[] name;
             }
         }
+    } else {
+        DEBUG(L"GetRawInputDeviceList failed");
     }
     free(pRawInputDeviceList);
     return touchpad;
